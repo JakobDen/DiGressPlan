@@ -11,10 +11,6 @@ import rdkit.Chem
 import wandb
 import matplotlib.pyplot as plt
 
-
-
-
-
 class MolecularVisualization:
     def __init__(self, remove_h, dataset_infos):
         self.remove_h = remove_h
@@ -136,6 +132,38 @@ class MolecularVisualization:
             print("Can't kekulize molecule")
         return mols
 
+room_labels = {
+    0: 'LivingRoom',
+    1: 'MasterRoom',
+    2: 'Kitchen',
+    3: 'Bathroom',
+    4: 'DiningRoom',
+    5: 'ChildRoom',
+    6: 'StudyRoom',
+    7: 'SecondRoom',
+    8: 'GuestRoom',
+    9: 'Balcony',
+    10: 'Entrance',
+    11: 'Storage',
+    12: 'Wall-in',
+    13: 'External',
+    14: 'ExteriorWall',
+    15: 'FrontDoor',
+    16: 'InteriorWall',
+    17: 'InteriorDoor'
+}
+arrow_labels = {
+    1: 'left-above',
+    2: 'left-below',
+    3: 'left-of',
+    4: 'above',
+    5: 'inside',
+    6: 'surrounding',
+    7: 'below',
+    8: 'right-of',
+    9: 'right-above',
+    10: 'right-below'
+}
 
 class NonMolecularVisualization:
     def to_networkx(self, node_list, adjacency_matrix):
@@ -144,40 +172,35 @@ class NonMolecularVisualization:
         node_list: the nodes of a batch of nodes (bs x n)
         adjacency_matrix: the adjacency_matrix of the molecule (bs x n x n)
         """
-        graph = nx.Graph()
-
+        graph = nx.DiGraph()
+        node_types = {}
+        edge_types = {}
         for i in range(len(node_list)):
             if node_list[i] == -1:
                 continue
             graph.add_node(i, number=i, symbol=node_list[i], color_val=node_list[i])
-
+            node_types[i] = int(node_list[i])
         rows, cols = np.where(adjacency_matrix >= 1)
         edges = zip(rows.tolist(), cols.tolist())
         for edge in edges:
             edge_type = adjacency_matrix[edge[0]][edge[1]]
             graph.add_edge(edge[0], edge[1], color=float(edge_type), weight=3 * edge_type)
+            edge_types[(int(edge[0]), int(edge[1]))] = int(edge_type)
+        for node in graph.nodes():
+            graph.nodes[node]['label'] = room_labels[node_types[node]]
+        for u, v in graph.edges():
+            graph.edges[u, v]['label'] = arrow_labels[edge_types[(u, v)]]
         return graph
 
-    def visualize_non_molecule(self, graph, pos, path, iterations=100, node_size=100, largest_component=False):
-        if largest_component:
-            CGs = [graph.subgraph(c) for c in nx.connected_components(graph)]
-            CGs = sorted(CGs, key=lambda x: x.number_of_nodes(), reverse=True)
-            graph = CGs[0]
-
-        # Plot the graph structure with colors
-        if pos is None:
-            pos = nx.spring_layout(graph, iterations=iterations)
-
-        # Set node colors based on the eigenvectors
-        w, U = np.linalg.eigh(nx.normalized_laplacian_matrix(graph).toarray())
-        vmin, vmax = np.min(U[:, 1]), np.max(U[:, 1])
-        m = max(np.abs(vmin), vmax)
-        vmin, vmax = -m, m
-
+    def visualize_non_molecule(self, graph, pos, path, iterations=100, node_size=200, largest_component=False):
+        pos = nx.spring_layout(graph, iterations=iterations)
         plt.figure()
-        nx.draw(graph, pos, font_size=5, node_size=node_size, with_labels=True)
-        plt.legend()
-        plt.tight_layout()
+        nodes = nx.draw_networkx_nodes(graph, pos)
+        edges = nx.draw_networkx_edges(graph, pos)
+        node_labels = nx.get_node_attributes(graph, 'label')
+        nx.draw_networkx_labels(graph, pos, labels=node_labels, font_size=10)
+        edge_labels = nx.get_edge_attributes(graph, 'label')
+        nx.draw_networkx_edge_labels(graph, pos, edge_labels=edge_labels, font_size=8)
         plt.savefig(path)
         plt.close("all")
 
@@ -185,7 +208,6 @@ class NonMolecularVisualization:
         # define path to save figures
         if not os.path.exists(path):
             os.makedirs(path)
-
         # visualize the final molecules
         for i in range(num_graphs_to_visualize):
             file_path = os.path.join(path, 'graph_{}.png'.format(i))
@@ -196,13 +218,9 @@ class NonMolecularVisualization:
                 wandb.log({log: [wandb.Image(im, caption=file_path)]})
 
     def visualize_chain(self, path, nodes_list, adjacency_matrix):
-        # convert graphs to networkx
         graphs = [self.to_networkx(nodes_list[i], adjacency_matrix[i]) for i in range(nodes_list.shape[0])]
-        # find the coordinates of atoms in the final molecule
         final_graph = graphs[-1]
         final_pos = nx.spring_layout(final_graph, seed=0)
-
-        # draw gif
         save_paths = []
         num_frams = nodes_list.shape[0]
 
