@@ -1,4 +1,7 @@
-# DiGress: Discrete Denoising diffusion models for graph generation
+# DiGress: Discrete Denoising diffusion models for room plan generation
+The code adjusted for https://github.com/HanHan55/Graph2plan dataset.
+![graph_22](https://github.com/user-attachments/assets/61a7604d-c511-4381-a5bf-ac632b56e7c2)
+![graph_17](https://github.com/user-attachments/assets/9365db79-4658-42e5-b8c5-f0cf7ac6fa8e)
 
 ## Environment installation
 This code was tested with PyTorch 2.0.1, cuda 11.8 and torch_geometrics 2.3.1
@@ -43,10 +46,7 @@ Note: graph_tool and torch_geometric currently seem to conflict on MacOS, I have
   - To run the debugging code: `python3 main.py +experiment=debug.yaml`. We advise to try to run the debug mode first
     before launching full experiments.
   - To run a code on only a few batches: `python3 main.py general.name=test`.
-  - To run the continuous model: `python3 main.py model=continuous`
   - To run the discrete model: `python3 main.py`
-  - You can specify the dataset with `python3 main.py dataset=guacamol`. Look at `configs/dataset` for the list
-of datasets that are currently available
 
 ## Cite the paper
 
