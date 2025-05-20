@@ -2,7 +2,8 @@
 The code adjusted for https://github.com/HanHan55/Graph2plan dataset.
 ![graph_22](https://github.com/user-attachments/assets/61a7604d-c511-4381-a5bf-ac632b56e7c2)
 ![graph_17](https://github.com/user-attachments/assets/9365db79-4658-42e5-b8c5-f0cf7ac6fa8e)
-Class SpectreGraphDataset fullu rewritten. Also, I've changed the model so that it generates directed graphs.
+
+Class SpectreGraphDataset fully rewritten. Also, I've changed the model so that it generates directed graphs.
 ## Environment installation
 This code was tested with PyTorch 2.0.1, cuda 11.8 and torch_geometrics 2.3.1
 
